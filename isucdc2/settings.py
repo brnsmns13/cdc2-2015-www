@@ -59,7 +59,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'cdc',
         'USER': 'root',
-        'PASSWORD': 'cdc',
+        'PASSWORD': 'password',
         'HOST': '',
     }
 }
