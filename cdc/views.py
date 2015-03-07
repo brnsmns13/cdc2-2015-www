@@ -112,6 +112,9 @@ def settings(request):
 
         elif deleteaccount is not None:
             user.delete()
+            logout(request)
+            response = redirect('../?logout=true')
+            return response
 
         elif deletefiles is not None:
             delete_files(user.username)
@@ -176,7 +179,6 @@ def download(request):
             return response
     
     return HttpResponse('File not found')
-
 
 
 def form(request):

@@ -44,5 +44,3 @@ def delete_files(account):
         fn = os.path.join(outgoing_dir, f)
         os.remove(fn)
 
-
-
