@@ -95,24 +95,24 @@ def settings(request):
     if not is_logged_in(request):
         return HttpResponseRedirect('login')
 
+    try:
     if request.method == 'POST':
         newpass = request.POST.get('newpass')
         deleteaccount = request.POST.get('deleteaccount')
         deletefiles = request.POST.get('deletefiles')
         user = User.objects.get(username__exact==user.username)
 
-        try:
-            if newpass is not None:
-                user.password = newpass
-                user.save()
+        if newpass is not None:
+            user.password = newpass
+            user.save()
 
-            elif deleteaccount is not None:
-                user.delete()
+        elif deleteaccount is not None:
+            user.delete()
 
-            elif deletefiles is not None:
-                delete_files(user.username)
-        except Exception as e:
-            return HttpResponse(str(e))
+        elif deletefiles is not None:
+            delete_files(user.username)
+    except Exception as e:
+        return HttpResponse(str(e))
 
     return render(request, 'cdc/settings.html')
 
