@@ -107,7 +107,7 @@ def settings(request):
             deletefiles = request.POST.get('deletefiles')
 
         if newpass is not None:
-            user.password = newpass
+            user.set_password(newpass)
             user.save()
 
         elif deleteaccount is not None:
