@@ -95,6 +95,11 @@ def settings(request):
     if not is_logged_in(request):
         return HttpResponseRedirect('login')
 
+    newpass = None
+    deletefiles = None
+    deleteaccount = None
+    user = None
+
     try:
         if request.method == 'POST':
             newpass = request.POST.get('newpass')
