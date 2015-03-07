@@ -147,7 +147,7 @@ def upload(request):
                     request.FILES['file'], request.POST['title'], username)
                 return HttpResponseRedirect('success')
             except Exception as e:
-                return HttpResponse('Error uploading file...')
+                return HttpResponse(str(e))
 
     else:
         form = UploadFileForm()
