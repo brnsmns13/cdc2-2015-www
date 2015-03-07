@@ -18,9 +18,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = 'A94EEE95-35B8-4713-9E2B-017DDCC76888'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -82,5 +82,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
 STATIC_URL = '/static/'
-MEDIA_URL = '/uploads/'
-MEDIA_ROOT = '/uploads'
+# MEDIA_URL = '/uploads/'
+# MEDIA_ROOT = '/uploads'

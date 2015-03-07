@@ -135,15 +135,15 @@ def download(request):
     if not is_logged_in(request):
         return HttpResponseRedirect('login')
 
-    filename = request.GET.get('filename')
-    filepath = os.path.join('/uploads', request.user.username, filename)
-    if os.path.exists(filepath):
-        fp = open(filepath)
-        response = HttpResponse(fp.read())
-        fp.close()
-        response['Content-Type'] = 'application/octet-stream'
-        response['Content-Disposition'] = 'attachment; ' + filename
-        return response
+    if request.method == 'GET':
+        filename = request.GET.get('filename')
+        filepath = os.path.join('/uploads', request.user.username, filename)
+        if os.path.exists(filepath):
+            fp = open(filepath)
+            response = HttpResponse(fp.read())
+            fp.close()
+            response['Content-Type'] = 'application/octet-stream'
+            return response
     
     return HttpResponse('File not found')
 
