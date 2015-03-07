@@ -3,10 +3,11 @@ import os
 from django.contrib.auth.models import User
 
 def handle_uploaded_file(f, title, user):
-    targetdir = 'uploads/' + user.__str__() + '/incoming/'
+    targetdir = os.path.join('/uploads', user, 'incoming')
     if not os.path.exists(targetdir):
         os.makedirs(targetdir)
-    with open(targetdir + title, 'wb+') as destination:
+    target_file = os.path.join(targetdir, title)
+    with open(target_file, 'wb+') as destination:
         for chunk in f.chunks():
             destination.write(chunk)
 
@@ -30,3 +31,16 @@ def list_files(account, mode):
         return os.listdir(targetdir)
     else:
         return False
+
+def delete_files(account):
+    incoming_dir = '/uploads/%s/%s/' % (account , 'incoming')
+    outgoing_dir = '/uploads/%s/%s/' % (account , 'outgoing')
+
+    for _, __, f in os.path.walk(incoming_dir):
+        os.remove(f)
+
+    for _, __, f in os.path.walk(outgoing_dir):
+        os.remove(f)
+
+
+

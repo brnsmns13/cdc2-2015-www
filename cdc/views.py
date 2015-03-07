@@ -92,6 +92,25 @@ def login_admin(request):
 
 
 def settings(request):
+    if not is_logged_in(request):
+        return HttpResponseRedirect('login')
+
+    if request.method == 'POST':
+        newpass = request.POST.get('newpass')
+        deleteaccount = request.POST.get('deleteaccount')
+        deletefiles = request.POST.get('deletefiles')
+        user = User.objects.get(username__exact==user.username)
+
+        if newpass is not None:
+            user.password = newpass
+            user.save()
+
+        elif deleteaccount is not None:
+            user.delete()
+
+        elif deletefiles is not None:
+            delete_files(user.username)
+
     return render(request, 'cdc/settings.html')
 
 
@@ -123,9 +142,13 @@ def upload(request):
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
-            handle_uploaded_file(
-                request.FILES['file'], request.POST['title'], username)
-            return HttpResponseRedirect('success')
+            try:
+                handle_uploaded_file(
+                    request.FILES['file'], request.POST['title'], username)
+                return HttpResponseRedirect('success')
+            except Exception as e:
+                return HttpResponse('Error uploading file...')
+
     else:
         form = UploadFileForm()
     return render_to_response('cdc/upload.html', {'form': form})

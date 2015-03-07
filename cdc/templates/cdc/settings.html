@@ -1,1 +1,17 @@
-<p style='color: white'>Currently, it is not possible to manage your own account on this site. Please contact an administrator for account support. We are sorry for the inconvenience.</p>
+<form action="/accounts/settings/" method="POST">
+    <h3>Change Password</h3>
+    <input type="password" name="newpass" />
+    <button type="submit">Sumbit</button>
+</form>
+
+<form action="/accounts/settings/" method="POST">
+    <h3>Delete Account</h3>
+    <input type="checkbox" name="deleteaccount" />
+    <button type="submit">Sumbit</button>
+</form>
+
+<form action="/accounts/settings/" method="POST">
+    <h3>Delete Files</h3>
+    <input type="checkbox" name="deletefiles" />
+    <button type="submit">Sumbit</button>
+</form>
