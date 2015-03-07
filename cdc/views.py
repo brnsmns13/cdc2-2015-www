@@ -2,30 +2,34 @@ from django.shortcuts import (
     render, render_to_response, redirect, get_object_or_404)
 from models import SiteUser, LoginSession, Testimonial
 from django.contrib.auth.models import User
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from .forms import *
 from .actions import *
 
+
 def index(request):
     if request.GET.get('logout', False):
-        context = { 'script' : 'True' }
+        context = {'script': 'True'}
         return render(request, 'cdc/index.html', context)
     return render(request, 'cdc/index.html')
+
 
 def contact(request):
     return render(request, 'cdc/contact.html')
 
+
 def about(request):
     return render(request, 'cdc/about.html')
 
+
 def testimonials(request):
-    # This logic needs to be switched around, need auth to delete
-    if request.GET.get('remove', False):
-        entry = Testimonial.objects.get(postedby=request.GET['remove'])
-        entry.delete()
     user = None
     if is_logged_in(request):
         user = get_user(request)
+
+    if user and request.GET.get('remove', False):
+        entry = Testimonial.objects.get(postedby=request.GET['remove'])
+        entry.delete()
 
     template_values = {
             'testimonials': Testimonial.objects.all(),
@@ -33,51 +37,52 @@ def testimonials(request):
     }
     return render(request, 'cdc/testimonials.html', template_values)
 
+
 def login(request):
     """
     - (pin/next) is indicator of company or user login
     """
-    # Split into user login, company login, admin login
-    if is_logged_in(request): # or is_admin(request):
-        return HttpResponseRedirect('home')
+    if request.method == 'GET':
+        # Split into user login, company login, admin login
+        if is_logged_in(request):  # or is_admin(request):
+            return HttpResponseRedirect('home')
+        else:
+            return render(request, 'cdc/login.html')
+
+    param_next = request.POST.get('next')
+    account = request.POST.get('account')
+    company = request.POST.get('company')
+    pin = request.POST.get('pin')
+
 
     # Make sure all required fields are in request
-    elif (request.POST.get('next', False) and
-         (not request.POST.get('account', False) or
-          not request.POST.get('company', False) or
-          not request.POST.get('pin', False))):
-        context = { 'error' : "Please fill out all fields before submitting." }
+    elif (param_next and
+            (not account or not company or not pin)):
+        context = {'error': 'Please fill out all fields before submitting.'}
         return render(request, 'cdc/login.html', context)
 
     # Company login
-    elif (request.POST.get('account', False) and 
-            request.POST.get('company', False) and 
-            request.POST.get('pin', False)):
+    elif (account and company and pin):
         # Authentication
-        account = request.POST['account']
-        company = request.POST['company']
-        pin = request.POST['pin']
-        # Make sure all POST variables are present
-        if account and company and pin:
-            if User.objects.filter(username=account).exists():
-                siteuser = SiteUser.objects.get(
-                    company=company, user=User.objects.get(username=account))
-                # if the user supplied the correct password
-                print account, company, pin
-                if siteuser.user.check_password(pin):
-                    print "authed"
-                    token = create_session(siteuser.user.username)
-                    response = HttpResponseRedirect('home')
-                    response.set_cookie('secret_token', token)
-                    return response
-                else:
-                    context = {
-                        'error' : ("The username/password combination you "
-                                   "entered doesn't match.") }
-                    return render(request, 'cdc/login.html', context)
+        if User.objects.filter(username=account).exists():
+            siteuser = SiteUser.objects.get(
+                company=company, user=User.objects.get(username=account))
+            # if the user supplied the correct password
+            print account, company, pin
+            if siteuser.user.check_password(pin):
+                print "authed"
+                token = create_session(siteuser.user.username)
+                response = HttpResponseRedirect('home')
+                response.set_cookie('secret_token', token)
+                return response
             else:
-                context = { 'error' : "The user you requested was not found." }
+                context = {
+                    'error': ("The username/password combination you "
+                              "entered doesn't match.")}
                 return render(request, 'cdc/login.html', context)
+        else:
+            context = {'error': "The user you requested was not found."}
+            return render(request, 'cdc/login.html', context)
 
     # Admin user login
     elif request.POST.get('admin', False):
@@ -92,11 +97,14 @@ def login(request):
     else:
         return render(request, 'cdc/login.html')
 
+
 def login_admin(request):
     return render(request, 'cdc/admin.html')
 
+
 def settings(request):
     return render(request, 'cdc/settings.html')
+
 
 def logout(request):
     """
@@ -106,21 +114,23 @@ def logout(request):
     response.delete_cookie('secret_token')
     try:
         LoginSession.objects.filter(
-                token=request.COOKIES.get('secret_token', False)).delete()
+            token=request.COOKIES.get('secret_token', False)).delete()
         print "Session deleted successfully"
     except Exception as e:
         print "could not delete session"
         print e
     return response
 
+
 def account_home(request):
     if is_logged_in(request):
         user = get_user(request)
         page = request.GET.get('page', False)
         success = request.GET.get('success', False)
-        context = { 'user' : user, 'page' : page }
+        context = {'user': user, 'page': page}
         return render(request, 'cdc/account.html', context)
     return HttpResponseRedirect('login')
+
 
 def upload(request):
     user = get_user(request).username
@@ -134,6 +144,7 @@ def upload(request):
         form = UploadFileForm()
     return render_to_response('cdc/upload.html', {'form': form})
 
+
 def form(request):
     if request.method == 'POST':
         form = TestimonialForm(request.POST, request.FILES)
@@ -145,8 +156,10 @@ def form(request):
         form = TestimonialForm()
     return render_to_response('cdc/form.html', {'form': form})
 
+
 def success(request):
     return render(request, 'cdc/success.html')
+
 
 def filings(request):
     user = get_user(request)
@@ -157,6 +170,7 @@ def filings(request):
         'mode': 'incoming'}
     return render(request, 'cdc/files.html', template_values)
 
+
 def reports(request):
     user = get_user(request)
     files = list_files(user, '/outgoing/')
@@ -165,6 +179,7 @@ def reports(request):
         'user': user,
         'mode': 'outgoing'}
     return render(request, 'cdc/files.html', template_values)
+
 
 def admin(request):
     message = ''
@@ -201,6 +216,7 @@ def admin(request):
             user = User.objects.create_user(account, '', pin)
             siteuser = SiteUser(user=user, company=company)
             siteuser.save()
+
             # Create the upload and download directories for the new user
             targetdir = 'uploads/' + user.username
             if not os.path.exists(targetdir):
@@ -239,17 +255,19 @@ def admin(request):
             request.GET.get('search', ''), '/' + request.GET.get('mode', ''))
         if not files:
             message += "No files found!\n"
+
     if request.GET.get('list_users', False):
         accounts = User.objects.all()
+
     if get_user(request) and get_user(request).is_superuser:
         template_values = {
-            'users' : accounts,
-            'create' : create,
-            'message' : message,
-            'files' : files,
-            'mode' : request.GET.get('mode', False),
-            'search' : request.GET.get('search', False),
-            'user' : get_user(request) 
+            'users': accounts,
+            'create': create,
+            'message': message,
+            'files': files,
+            'mode': request.GET.get('mode', False),
+            'search': request.GET.get('search', False),
+            'user': get_user(request)
         }
         return render(request, 'cdc/account.html', template_values)
     return HttpResponseRedirect('login/admin')

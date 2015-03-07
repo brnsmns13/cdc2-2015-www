@@ -20,8 +20,10 @@ def is_admin(request):
 
 def get_user(request):
     if is_logged_in(request):
-        session = LoginSession.objects.get(token=request.COOKIES.get('secret_token', False))
-        return SiteUser.objects.get(user=User.objects.get(username=session.user)).user
+        session = LoginSession.objects.get(
+            token=request.COOKIES.get('secret_token', False))
+        return SiteUser.objects.get(
+            user=User.objects.get(username=session.user)).user
 
 def list_files(account, mode):
     targetdir = 'uploads/' + account.__str__() + mode
@@ -31,6 +33,7 @@ def list_files(account, mode):
         return False
 
 def create_session(user):
+    # this needs to be changed...
     try:
         # Generate a very secret session token for the user
         token = (LoginSession.objects.all().order_by('pk').reverse()[0].pk + 19) * 14123
