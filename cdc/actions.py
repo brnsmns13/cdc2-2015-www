@@ -15,6 +15,10 @@ def is_logged_in(request):
     # Session hijacking...
     return LoginSession.objects.filter(token=request.COOKIES.get('secret_token', False)).exists()
 
+def logged_in(request):
+    session = request.session.get('session_id')
+    if request.user.is_authenticated():
+
 def is_admin(request):
     return get_user(request).user.is_superuser
 
