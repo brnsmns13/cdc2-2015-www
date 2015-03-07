@@ -101,15 +101,18 @@ def settings(request):
         deletefiles = request.POST.get('deletefiles')
         user = User.objects.get(username__exact==user.username)
 
-        if newpass is not None:
-            user.password = newpass
-            user.save()
+        try:
+            if newpass is not None:
+                user.password = newpass
+                user.save()
 
-        elif deleteaccount is not None:
-            user.delete()
+            elif deleteaccount is not None:
+                user.delete()
 
-        elif deletefiles is not None:
-            delete_files(user.username)
+            elif deletefiles is not None:
+                delete_files(user.username)
+        except Exception as e:
+            return HttpResponse(str(e))
 
     return render(request, 'cdc/settings.html')
 
