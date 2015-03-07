@@ -33,8 +33,8 @@ def list_files(account, mode):
         return False
 
 def delete_files(account):
-    incoming_dir = '/uploads/%s/%s/' % (account , 'incoming')
-    outgoing_dir = '/uploads/%s/%s/' % (account , 'outgoing')
+    incoming_dir = os.path.join('/uploads', account , 'incoming')
+    outgoing_dir = os.path.join('/uploads', account , 'outgoing')
 
     for _, __, f in os.path.walk(incoming_dir):
         os.remove(f)
