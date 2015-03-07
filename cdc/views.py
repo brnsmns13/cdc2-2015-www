@@ -1,6 +1,7 @@
 from django.shortcuts import (
     render, render_to_response, redirect, get_object_or_404)
 from models import SiteUser, LoginSession, Testimonial
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from .forms import *
@@ -54,16 +55,19 @@ def login(request):
     company = request.POST.get('company')
     pin = request.POST.get('pin')
 
-
     # Make sure all required fields are in request
-    elif (param_next and
-            (not account or not company or not pin)):
+    if (param_next or account is None or company is None or pin is None):
         context = {'error': 'Please fill out all fields before submitting.'}
         return render(request, 'cdc/login.html', context)
 
     # Company login
     elif (account and company and pin):
         # Authentication
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            if user.is_Active():
+                login(request, user)
+
         if User.objects.filter(username=account).exists():
             siteuser = SiteUser.objects.get(
                 company=company, user=User.objects.get(username=account))
@@ -84,21 +88,20 @@ def login(request):
             context = {'error': "The user you requested was not found."}
             return render(request, 'cdc/login.html', context)
 
-    # Admin user login
-    elif request.POST.get('admin', False):
-        user = get_object_or_404(
-            User, username=request.POST.get('username', False))
-        if (user.check_password(request.POST.get('password', True)) and
-                user.is_superuser):
+
+def login_admin(request):
+    if request.method == 'POST':
+        # Do admin login
+        username = request.POST.get('username')
+        password = reqeust.POST.get('password')
+        user = get_object_or_404(User, username)
+        if user and user.check_password(password) and user.is_superuser:
+            # create admin session token
             token = create_session(user.username)
             response = HttpResponseRedirect('home')
             response.set_cookie('secret_token', token)
             return response
-    else:
-        return render(request, 'cdc/login.html')
 
-
-def login_admin(request):
     return render(request, 'cdc/admin.html')
 
 

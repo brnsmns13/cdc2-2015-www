@@ -4,13 +4,12 @@
 {% block content %}    <br/><br/>
     <div id="login">
         <strong><p style="text-align: center">Admin Login</p></strong>
-        <form action="{% url 'cdc:login' %}" method="post"><br/>
+        <form action="{% url 'cdc:login_admin' %}" method="post"><br/>
            Username:
            <br/><input type="text" name="username"/><br/>
            Password:
            <br/><input type="password" name="password"/><br/><br/>
         <input type="submit" value="login"/>
-        <input type="hidden" name="admin" value="True"/>
         <br/><br/>
             <p style="color:red">{{ error }}</p>
         </form>
