@@ -5,12 +5,11 @@
         <form action="{% url 'cdc:login' %}" method="post"><br/>
            Company name:
             <br/><input type="text" name="company"/><br/>
-           Account number:
+           Account:
             <br/><input type="text" name="account"/><br/>
-           PIN:
-           <br/><input type="password" name="pin" size="4" maxlength="4"/><br/><br/>
+           Password:
+           <br/><input type="password" name="pin" /><br/><br/>
         <input type="submit" value="login"/>
-        <input type="hidden" name="next" value="True"/>
         <br/><br/>
             <p style="color:red">{{ error }}</p>
         </form>

@@ -39,10 +39,7 @@ def testimonials(request):
     return render(request, 'cdc/testimonials.html', template_values)
 
 
-def login(request):
-    """
-    - (pin/next) is indicator of company or user login
-    """
+def login_view(request):
     if request.method == 'GET':
         # Split into user login, company login, admin login
         if is_logged_in(request):  # or is_admin(request):
@@ -50,98 +47,84 @@ def login(request):
         else:
             return render(request, 'cdc/login.html')
 
-    param_next = request.POST.get('next')
     account = request.POST.get('account')
     company = request.POST.get('company')
     pin = request.POST.get('pin')
 
     # Make sure all required fields are in request
-    if (param_next or account is None or company is None or pin is None):
+    if (account is None or company is None or pin is None):
         context = {'error': 'Please fill out all fields before submitting.'}
         return render(request, 'cdc/login.html', context)
 
-    # Company login
-    elif (account and company and pin):
-        # Authentication
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            if user.is_Active():
-                login(request, user)
+    # Authentication
+    user = authenticate(username=account, password=pin)
+    if user is not None:
+        if user.is_active:
+            login(request, user)
+            response = HttpResponseRedirect('home')
+            return response
 
-        if User.objects.filter(username=account).exists():
-            siteuser = SiteUser.objects.get(
-                company=company, user=User.objects.get(username=account))
-            # if the user supplied the correct password
-            print account, company, pin
-            if siteuser.user.check_password(pin):
-                print "authed"
-                token = create_session(siteuser.user.username)
-                response = HttpResponseRedirect('home')
-                response.set_cookie('secret_token', token)
-                return response
-            else:
-                context = {
-                    'error': ("The username/password combination you "
-                              "entered doesn't match.")}
-                return render(request, 'cdc/login.html', context)
-        else:
-            context = {'error': "The user you requested was not found."}
-            return render(request, 'cdc/login.html', context)
+    context = {
+        'error': ("The username/password combination you "
+                  "entered doesn't match.")}
+    return render(request, 'cdc/login.html', context)
 
 
 def login_admin(request):
+    if request.method == 'GET':
+        return render(request, 'cdc/admin.html')
+
     if request.method == 'POST':
         # Do admin login
         username = request.POST.get('username')
-        password = reqeust.POST.get('password')
-        user = get_object_or_404(User, username)
-        if user and user.check_password(password) and user.is_superuser:
+        password = request.POST.get('password')
+        user = authenticate(username=username, password=password)
+        if user is not None and user.is_superuser:
             # create admin session token
-            token = create_session(user.username)
-            response = HttpResponseRedirect('home')
-            response.set_cookie('secret_token', token)
+            login(request, user)
+            response = redirect('/accounts/home')
             return response
 
-    return render(request, 'cdc/admin.html')
+    context = {
+        'error': ("The username/password combination you "
+                  "entered doesn't match.")}
+    return render(request, 'cdc/admin.html', context)
 
 
 def settings(request):
     return render(request, 'cdc/settings.html')
 
 
-def logout(request):
+def logout_view(request):
     """
     - Need to enable auto session store management
     """
+    logout(request)
     response = redirect('../?logout=true')
-    response.delete_cookie('secret_token')
-    try:
-        LoginSession.objects.filter(
-            token=request.COOKIES.get('secret_token', False)).delete()
-        print "Session deleted successfully"
-    except Exception as e:
-        print "could not delete session"
-        print e
     return response
 
 
 def account_home(request):
-    if is_logged_in(request):
-        user = get_user(request)
-        page = request.GET.get('page', False)
-        success = request.GET.get('success', False)
-        context = {'user': user, 'page': page}
-        return render(request, 'cdc/account.html', context)
-    return HttpResponseRedirect('login')
+    if not is_logged_in(request):
+        return HttpResponseRedirect('login')
+
+    user = get_user(request)
+    page = request.GET.get('page', False)
+    success = request.GET.get('success', False)
+    context = {'page': page}
+    return render(request, 'cdc/account.html', context)
 
 
 def upload(request):
-    user = get_user(request).username
+    if not is_logged_in(request):
+        return HttpResponseRedirect('login')
+
+    username = request.user.username
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             handle_uploaded_file(
-                request.FILES['file'], request.POST['title'], user)
+                request.FILES['file'], request.POST['title'], username)
             return HttpResponseRedirect('success')
     else:
         form = UploadFileForm()
@@ -150,14 +133,14 @@ def upload(request):
 
 def form(request):
     if request.method == 'POST':
-        form = TestimonialForm(request.POST, request.FILES)
+        f = TestimonialForm(request.POST, request.FILES)
         entry = Testimonial(
             text=request.POST['text'], postedby=request.POST['postedby'])
         entry.save()
         return HttpResponseRedirect('testimonials')
     else:
-        form = TestimonialForm()
-    return render_to_response('cdc/form.html', {'form': form})
+        f = TestimonialForm()
+    return render_to_response('cdc/form.html', {'form': f})
 
 
 def success(request):
@@ -165,112 +148,138 @@ def success(request):
 
 
 def filings(request):
+    if not is_logged_in(request):
+        return HttpResponseRedirect('login')
+
     user = get_user(request)
     files = list_files(user, '/incoming/')
     template_values = {
         'files': files,
-        'user': user,
         'mode': 'incoming'}
     return render(request, 'cdc/files.html', template_values)
 
 
 def reports(request):
-    user = get_user(request)
+    if not is_logged_in(request):
+        return HttpResponseRedirect('login')
+
     files = list_files(user, '/outgoing/')
     template_values = {
         'files': files,
-        'user': user,
         'mode': 'outgoing'}
     return render(request, 'cdc/files.html', template_values)
 
 
 def admin(request):
+    if not is_admin(request):
+        return HttpResponseRedirect('login_admin')
+
     message = ''
     files = None
     create = None
     accounts = None
-    if request.GET.get('user_button', False):
-        create = 'newuser'
-    elif request.GET.get('admin_button', False):
-        create = 'newadmin'
 
-    # Password reset
-    if request.POST.get('pwreset', False):
-        user = get_object_or_404(User, username=request.POST['account'])
-        user.set_password(request.POST.get('pin', False))
-        user.save()
-        message += 'Password successfully reset!\n'
-
-    # Delete User
-    if request.POST.get('delete', False):
-        user = get_object_or_404(User, username=request.POST['account'])
-        user.delete()
-        message += 'User successfully deleted!\n'
-
-    # Create new site user
-    if request.POST.get('newuser', False):
-        account = request.POST.get('account', False)
-        if User.objects.filter(username=account).exists():
-            message += 'Error: User already exists in database.\n'
-        else:
-            account = request.POST.get('account', False)
-            pin = request.POST.get('pin', False)
-            company = request.POST.get('company', False)
-            user = User.objects.create_user(account, '', pin)
-            siteuser = SiteUser(user=user, company=company)
-            siteuser.save()
-
-            # Create the upload and download directories for the new user
-            targetdir = 'uploads/' + user.username
-            if not os.path.exists(targetdir):
-                os.makedirs(targetdir + '/incoming')
-                os.chmod(targetdir + '/incoming', 0777)
-                os.makedirs(targetdir + '/outgoing')
-                os.chmod(targetdir + '/outgoing', 0777)
-            message += 'User successfully created!\n'
-
-    # Create new admin
-    if request.POST.get('newadmin', False):
-        account = request.POST.get('account', False)
-        if User.objects.filter(username=account).exists():
-            message += 'Error: User already exists in database.\n'
-        else:
-            username = request.POST.get('username', False)
-            passwd = request.POST.get('passwrod', False)
-            user = User.objects.create_user(username, '', passwd)
-            user.is_superuser = True
+    if request.method == 'POST':
+        # Password reset
+        if request.POST.get('pwreset', False):
+            user = get_object_or_404(User, username=request.POST['account'])
+            user.set_password(request.POST.get('pin', False))
             user.save()
-            siteuser = SiteUser(user=user, company="Admin")
-            siteuser.save()
-            message += 'Admin successfully created!\n'
+            message += 'Password successfully reset!\n'
 
-    # Delete a file
-    if request.GET.get('delete', False):
-        try:
-            os.remove(request.GET['delete'])
-            message += 'File \'' + request.GET['delete'] + '\' deleted!\n'
-        except OSError:
-            message += 'That file does not exist.\n'
+        # Delete User
+        if request.POST.get('delete', False):
+            user = User.objects.get(username__exact=request.POST.get('account'))
+            if user is not None:
+                user.delete()
+                message += 'User successfully deleted!\n'
+            else:
+                message += 'User does not exist\n'
 
-    # List a user's files
-    if request.GET.get('search', False):
-        files = list_files(
-            request.GET.get('search', ''), '/' + request.GET.get('mode', ''))
-        if not files:
-            message += "No files found!\n"
+        # Create new site user
+        if request.POST.get('newuser', False):
+            account = request.POST.get('account')
 
-    if request.GET.get('list_users', False):
-        accounts = User.objects.all()
+            user = None
+            try:
+                user = User.objects.get(username__exact=account)
+            except Exception as e:
+                pass
 
-    if get_user(request) and get_user(request).is_superuser:
-        template_values = {
-            'users': accounts,
-            'create': create,
-            'message': message,
-            'files': files,
-            'mode': request.GET.get('mode', False),
-            'search': request.GET.get('search', False),
-            'user': get_user(request)
-        }
-        return render(request, 'cdc/account.html', template_values)
+            if user is not None:
+                message += 'Error: User already exists in database.\n'
+
+            else:
+                account = request.POST.get('account', False)
+                pin = request.POST.get('pin', False)
+                company = request.POST.get('company', False)
+                user = User.objects.create_user(account, '', pin)
+                user.save()
+                siteuser = SiteUser(user=user, company=company)
+                siteuser.save()
+
+                # Create the upload and download directories for the new user
+                targetdir = 'uploads/' + user.username
+                if not os.path.exists(targetdir):
+                    os.makedirs(targetdir + '/incoming')
+                    os.makedirs(targetdir + '/outgoing')
+                message += 'User successfully created!\n'
+
+        # Create new admin
+        if request.POST.get('newadmin', False):
+            account = request.POST.get('account')
+
+            try:
+                user = User.objects.get(username__exact=account)
+            except Exception as e:
+                user = None
+
+            if user is not None:
+                message += 'Error: User already exists in database.\n'
+
+            else:
+                username = request.POST.get('username', False)
+                passwd = request.POST.get('password', False)
+                user = User.objects.create_user(username, '', passwd)
+                user.is_superuser = True
+                user.save()
+                siteuser = SiteUser(user=user, company="Admin")
+                siteuser.save()
+                message += 'Admin successfully created!\n'
+
+    if request.method == 'GET':
+        if request.GET.get('user_button', False):
+            create = 'newuser'
+        elif request.GET.get('admin_button', False):
+            create = 'newadmin'
+
+        # Delete a file
+        if request.GET.get('delete', False):
+            try:
+                os.remove(request.GET['delete'])
+                message += 'File \'' + request.GET['delete'] + '\' deleted!\n'
+            except OSError:
+                message += 'That file does not exist.\n'
+
+        # List a user's files
+        if request.GET.get('search'):
+            files = list_files(
+                request.GET.get('search', ''), '/' + request.GET.get('mode', ''))
+            if not files:
+                message += "No files found!\n"
+
+        if request.GET.get('list_users'):
+            accounts = User.objects.all()
+
+        if is_admin(request):
+            template_values = {
+                'users': accounts,
+                'create': create,
+                'message': message,
+                'files': files,
+                'mode': request.GET.get('mode', False),
+                'search': request.GET.get('search', False)
+            }
+            return render(request, 'cdc/account.html', template_values)
+
     return HttpResponseRedirect('login/admin')

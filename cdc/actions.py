@@ -1,6 +1,5 @@
 from models import LoginSession, SiteUser
 import os
-from os import listdir
 from django.contrib.auth.models import User
 
 def handle_uploaded_file(f, title, user):
@@ -11,28 +10,23 @@ def handle_uploaded_file(f, title, user):
         for chunk in f.chunks():
             destination.write(chunk)
 
-def is_logged_in(request):
-    # Session hijacking...
-    return LoginSession.objects.filter(token=request.COOKIES.get('secret_token', False)).exists()
+# def is_logged_in(request):
+#     # Session hijacking...
+#     return LoginSession.objects.filter(token=request.COOKIES.get('secret_token', False)).exists()
 
-def logged_in(request):
-    session = request.session.get('session_id')
-    if request.user.is_authenticated():
+def is_logged_in(request):
+    return request.user.is_authenticated()
 
 def is_admin(request):
-    return get_user(request).user.is_superuser
+    return is_logged_in(request) and request.user.is_superuser
 
 def get_user(request):
-    if is_logged_in(request):
-        session = LoginSession.objects.get(
-            token=request.COOKIES.get('secret_token', False))
-        return SiteUser.objects.get(
-            user=User.objects.get(username=session.user)).user
+    return request.user
 
 def list_files(account, mode):
     targetdir = 'uploads/' + account.__str__() + mode
     if os.path.exists(targetdir):
-        return [ f for f in listdir(targetdir) ]
+        return [ f for f in os.listdir(targetdir) ]
     else:
         return False
 
