@@ -151,8 +151,7 @@ def filings(request):
     if not is_logged_in(request):
         return HttpResponseRedirect('login')
 
-    user = get_user(request)
-    files = list_files(user, '/incoming/')
+    files = list_files(request.user.username, '/incoming/')
     template_values = {
         'files': files,
         'mode': 'incoming'}
@@ -163,7 +162,7 @@ def reports(request):
     if not is_logged_in(request):
         return HttpResponseRedirect('login')
 
-    files = list_files(user, '/outgoing/')
+    files = list_files(request.user.username, '/outgoing/')
     template_values = {
         'files': files,
         'mode': 'outgoing'}

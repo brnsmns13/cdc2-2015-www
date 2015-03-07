@@ -24,20 +24,9 @@ def get_user(request):
     return request.user
 
 def list_files(account, mode):
-    targetdir = 'uploads/' + account.__str__() + mode
+    prefix = '/uploads'
+    targetdir = os.path.join(prefix, account, mode)
     if os.path.exists(targetdir):
-        return [ f for f in os.listdir(targetdir) ]
+        return os.listdir(targetdir)
     else:
         return False
-
-def create_session(user):
-    # this needs to be changed...
-    try:
-        # Generate a very secret session token for the user
-        token = (LoginSession.objects.all().order_by('pk').reverse()[0].pk + 19) * 14123
-    # Bad things can happen if this is the first session
-    except IndexError:
-        token = 19 * 14123
-    session = LoginSession(token=token, user=user)
-    session.save()
-    return token
