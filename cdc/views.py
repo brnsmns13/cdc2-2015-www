@@ -98,14 +98,13 @@ def settings(request):
     newpass = None
     deletefiles = None
     deleteaccount = None
-    user = None
+    user = request.user
 
     try:
         if request.method == 'POST':
             newpass = request.POST.get('newpass')
             deleteaccount = request.POST.get('deleteaccount')
             deletefiles = request.POST.get('deletefiles')
-            user = User.objects.get(username__exact==user.username)
 
         if newpass is not None:
             user.password = newpass
