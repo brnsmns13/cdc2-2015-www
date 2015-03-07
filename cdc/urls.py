@@ -18,4 +18,5 @@ urlpatterns = patterns('',
     url(r'^accounts/filings$', views.filings, name='filings'),
     url(r'^accounts/reports$', views.reports, name='reports'),
     url(r'^accounts/success$', views.success, name='success'),
+    url(r'^accounts/download$', views.download, name='download')
 )

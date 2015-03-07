@@ -3,7 +3,7 @@ from django.shortcuts import (
 from models import SiteUser, LoginSession, Testimonial
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from .forms import *
 from .actions import *
 
@@ -129,6 +129,24 @@ def upload(request):
     else:
         form = UploadFileForm()
     return render_to_response('cdc/upload.html', {'form': form})
+
+
+def download(request):
+    if not is_logged_in(request):
+        return HttpResponseRedirect('login')
+
+    filename = request.GET.get('filename')
+    filepath = os.path.join('/uploads', request.user.username, filename)
+    if os.path.exists(filepath):
+        fp = open(filepath)
+        response = HttpResponse(fp.read())
+        fp.close()
+        response['Content-Type'] = 'application/octet-stream'
+        response['Content-Disposition'] = 'attachment; ' + filename
+        return response
+    
+    return HttpResponse('File not found')
+
 
 
 def form(request):
@@ -261,7 +279,7 @@ def admin(request):
                 message += 'That file does not exist.\n'
 
         # List a user's files
-        if request.GET.get('search'):
+        elif request.GET.get('search'):
             files = list_files(
                 request.GET.get('search', ''), '/' + request.GET.get('mode', ''))
             if not files:

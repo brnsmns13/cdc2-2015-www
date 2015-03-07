@@ -25,7 +25,7 @@ def get_user(request):
 
 def list_files(account, mode):
     prefix = '/uploads'
-    targetdir = os.path.join(prefix, account, mode)
+    targetdir = os.path.join(prefix, account, mode).replace('../', '')
     if os.path.exists(targetdir):
         return os.listdir(targetdir)
     else:

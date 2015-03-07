@@ -13,6 +13,10 @@
         Files for {{ user }}
     {% for file in files %}
         <li><a href="/uploads/{{ user }}/{{ mode }}/{{ file }}">{{ file }}</a></li>
+        <form method="GET" action="/accounts/download">
+            <button type="submit">{{ file }}</button>
+            <input type="hidden" name="filename" value="{{mode}}/{{file}}" />
+        </form>
     {% endfor %}
     </ol>
     {% else %}
