@@ -37,10 +37,12 @@ def delete_files(account):
     outgoing_dir = os.path.join('/uploads', account , 'outgoing')
 
     for f in os.listdir(incoming_dir):
-        os.remove(f)
+        fn = os.path.join(incoming_dir, f)
+        os.remove(fn)
 
     for f in os.listdir(outgoing_dir):
-        os.remove(f)
+        fn = os.path.join(outgoing_dir, f)
+        os.remove(fn)
 
 
 
